@@ -4,10 +4,12 @@ import theme from "./theme"; // your theme.js file
 import { Outlet } from "react-router-dom";
 
 export default function App() {
+  const apiUrl = import.meta.env.VITE_API_URL;
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Outlet />
+      <Outlet context={{ apiUrl }} />
     </ThemeProvider>
   );
 }

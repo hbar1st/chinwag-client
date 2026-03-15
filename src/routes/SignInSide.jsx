@@ -5,7 +5,12 @@ import ColorModeSelect from "../shared-theme/ColorModeSelect";
 import SignInCard from "../components/SignInCard";
 import Content from "../components/Content";
 
+import { useLocation } from "react-router-dom";
+
 export default function SignInSide(props) {
+  const location = useLocation();
+const email = location.state?.email;
+
   return (
     <AppTheme {...props}>
       <CssBaseline enableColorScheme />
@@ -57,7 +62,7 @@ export default function SignInSide(props) {
             }}
           >
             <Content />
-            <SignInCard />
+            <SignInCard email={email} />
           </Stack>
         </Stack>
       </Stack>
