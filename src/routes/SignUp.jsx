@@ -1,6 +1,8 @@
 import * as React from "react";
 
 import { Link as RouterLink } from "react-router";
+import { useNavigate, useOutletContext } from "react-router-dom";
+
 import Link from "@mui/material/Link";
 
 import Box from "@mui/material/Box";
@@ -9,6 +11,9 @@ import Checkbox from "@mui/material/Checkbox";
 import CssBaseline from "@mui/material/CssBaseline";
 import Divider from "@mui/material/Divider";
 import FormControlLabel from "@mui/material/FormControlLabel";
+import Snackbar from "@mui/material/Snackbar";
+import Alert from "@mui/material/Alert";
+
 import FormLabel from "@mui/material/FormLabel";
 import FormControl from "@mui/material/FormControl";
 import TextField from "@mui/material/TextField";
@@ -19,9 +24,7 @@ import { styled } from "@mui/material/styles";
 
 import AppTheme from "../shared-theme/AppTheme";
 import ColorModeSelect from "../shared-theme/ColorModeSelect";
-import {
-  SitemarkIcon,
-} from "../components/CustomIcons";
+import { SitemarkIcon } from "../components/CustomIcons";
 import GitHubIcon from "@mui/icons-material/GitHub";
 
 const Card = styled(MuiCard)(({ theme }) => ({
@@ -33,15 +36,16 @@ const Card = styled(MuiCard)(({ theme }) => ({
   gap: theme.spacing(2),
   margin: "auto",
   boxShadow:
-    "hsla(220, 30%, 5%, 0.05) 0px 5px 15px 0px, hsla(220, 25%, 10%, 0.05) 0px 15px 35px -5px",
+  "hsla(220, 30%, 5%, 0.05) 0px 5px 15px 0px, hsla(220, 25%, 10%, 0.05) 0px 15px 35px -5px",
   [theme.breakpoints.up("sm")]: {
     width: "450px",
   },
   ...theme.applyStyles("dark", {
     boxShadow:
-      "hsla(220, 30%, 5%, 0.5) 0px 5px 15px 0px, hsla(220, 25%, 10%, 0.08) 0px 15px 35px -5px",
+    "hsla(220, 30%, 5%, 0.5) 0px 5px 15px 0px, hsla(220, 25%, 10%, 0.08) 0px 15px 35px -5px",
   }),
 }));
+
 
 const SignUpContainer = styled(Stack)(({ theme }) => ({
   height: "calc((1 - var(--template-frame-height, 0)) * 100dvh)",
@@ -57,11 +61,11 @@ const SignUpContainer = styled(Stack)(({ theme }) => ({
     zIndex: -1,
     inset: 0,
     backgroundImage:
-      "radial-gradient(ellipse at 50% 50%, hsl(210, 100%, 97%), hsl(0, 0%, 100%))",
+    "radial-gradient(ellipse at 50% 50%, hsl(210, 100%, 97%), hsl(0, 0%, 100%))",
     backgroundRepeat: "no-repeat",
     ...theme.applyStyles("dark", {
       backgroundImage:
-        "radial-gradient(at 50% 50%, hsla(210, 100%, 16%, 0.5), hsl(220, 30%, 5%))",
+      "radial-gradient(at 50% 50%, hsla(210, 100%, 16%, 0.5), hsl(220, 30%, 5%))",
     }),
   },
 }));
@@ -69,53 +73,67 @@ const SignUpContainer = styled(Stack)(({ theme }) => ({
 export default function SignUp(props) {
   const [emailError, setEmailError] = React.useState(false);
   const [emailErrorMessage, setEmailErrorMessage] = React.useState("");
-  const [passwordError, setPasswordError] = React.useState(false);
-  const [passwordErrorMessage, setPasswordErrorMessage] = React.useState("");
+  const [newPasswordError, setNewPasswordError] = React.useState(false);
+  const [newPasswordErrorMessage, setNewPasswordErrorMessage] =
+  React.useState("");
   const [confirmPasswordError, setConfirmPasswordError] = React.useState(false);
-  const [confirmPasswordErrorMessage, setConfirmPasswordErrorMessage] = React.useState("");
+  const [confirmPasswordErrorMessage, setConfirmPasswordErrorMessage] =
+  React.useState("");
   const [nicknameError, setNickNameError] = React.useState(false);
   const [nicknameErrorMessage, setNickNameErrorMessage] = React.useState("");
   const [usernameError, setUsernameError] = React.useState(false);
   const [usernameErrorMessage, setUsernameErrorMessage] = React.useState("");
-
+  
+  const { apiUrl } = useOutletContext();
+  const navigate = useNavigate();
+  
+  const apiPath = `${apiUrl}/user/signup`;
+  const [validationErrors, setValidationErrors] = React.useState({});
+  const [success, setSuccess] = React.useState(false);
+  
   const validateInputs = () => {
     const email = document.getElementById("email");
-    const password = document.getElementById("password");
+    const password = document.getElementById("new-password");
     const confirmPassword = document.getElementById("confirm-password");
     const nickname = document.getElementById("nickname");
     const username = document.getElementById("username");
-
+    
     let isValid = true;
-
+    
     if (!email.value || !/\S+@\S+\.\S+/.test(email.value)) {
       setEmailError(true);
-      setEmailErrorMessage("Please enter a valid email address.");
+      setEmailErrorMessage("Email address does not seem to be valid.");
       isValid = false;
     } else {
       setEmailError(false);
       setEmailErrorMessage("");
     }
-
+    
     if (!password.value || password.value.length < 8) {
-      setPasswordError(true);
-      setPasswordErrorMessage("Password must be at least 6 characters long.");
+      setNewPasswordError(true);
+      setNewPasswordErrorMessage(
+        "Password must be at least 6 characters long.",
+      );
       isValid = false;
     } else {
-      setPasswordError(false);
-      setPasswordErrorMessage("");
+      setNewPasswordError(false);
+      setNewPasswordErrorMessage("");
     }
-
+    
     if (!confirmPassword.value || confirmPassword.value.length < 8) {
       setConfirmPasswordError(true);
       setConfirmPasswordErrorMessage(
         "Confirm Password must be at least 8 characters long.",
       );
       isValid = false;
+    } else if (confirmPassword.value !== password.value) {
+      setConfirmPasswordError(true);
+      setConfirmPasswordErrorMessage("Confirm Password must be the same as the Password")
     } else {
       setConfirmPasswordError(false);
       setConfirmPasswordErrorMessage("");
     }
-
+    
     if (!nickname.value || nickname.value.length < 1) {
       setNickNameError(true);
       setNickNameErrorMessage("Nickname is required.");
@@ -124,7 +142,7 @@ export default function SignUp(props) {
       setNickNameError(false);
       setNickNameErrorMessage("");
     }
-
+    
     if (!username.value || username.value.length < 1) {
       setUsernameError(true);
       setUsernameErrorMessage("Username is required.");
@@ -133,34 +151,87 @@ export default function SignUp(props) {
       setUsernameError(false);
       setUsernameErrorMessage("");
     }
-
+    
     return isValid;
   };
 
-  const handleSubmit = (event) => {
-    if (usernameError || nicknameError || emailError || passwordError || confirmPasswordError) {
-      event.preventDefault();
+  React.useEffect(() => {
+    setSuccess(false); //makes sure the snack bar isn't still here
+  }, []);
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    if (
+      usernameError ||
+      nicknameError ||
+      emailError ||
+      newPasswordError ||
+      confirmPasswordError
+    ) {
       return;
     }
     const data = new FormData(event.currentTarget);
-    console.log({
+    const postData = {
       nickname: data.get("nickname"),
       username: data.get("username"),
       email: data.get("email"),
       "new-password": data.get("new-password"),
       "confirm-password": data.get("confirm-password"),
-    });
+    };
     
+    try {
+      const response = await fetch(`${apiPath}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(postData),
+      });
+      
+      if (response.status != 400 && !response.ok) {
+        console.error("Signup failed");
+        return;
+      } else {
+        const result = await response.json();
+        
+        if (response.status == 400) {
+          const formatted = {};
+          result.data.forEach((err) => {
+            formatted[err.path] = err.msg;
+          });
+          
+          setValidationErrors(formatted);
+        } else {
+          setSuccess(true);
+          setTimeout(
+            () =>
+              navigate("/signin", { state: { email: result.data.email } }),
+            1500,
+          );
+        }
+      }
+    } catch (err) {
+      console.error("Network error during signup:", err);
+    }
   };
-
+  
   return (
     <AppTheme {...props}>
       <CssBaseline enableColorScheme />
       <ColorModeSelect sx={{ position: "fixed", top: "1rem", right: "1rem" }} />
+      <Snackbar
+        open={success}
+        autoHideDuration={1500}
+        onClose={() => setSuccess(false)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+        sx={{ mb: 6 }}
+      >
+        <Alert severity="success" variant="filled" sx={{ width: "100%" }}>
+          Account created successfully! Redirecting to sign in…
+        </Alert>
+      </Snackbar>
       <SignUpContainer direction="column" justifyContent="space-between">
         <Card variant="outlined">
           <Box component="div" sx={{ display: "flex" }}>
-              <SitemarkIcon />
+            <SitemarkIcon />
             <Typography
               component="h1"
               variant="h4"
@@ -177,14 +248,13 @@ export default function SignUp(props) {
             <FormControl>
               <FormLabel htmlFor="nickname">Nickname</FormLabel>
               <TextField
-                autoComplete="nickname"
                 name="nickname"
                 required
                 fullWidth
                 id="nickname"
                 placeholder="Jon Snow"
-                error={nicknameError}
-                helperText={nicknameErrorMessage}
+                error={Boolean(validationErrors.nickname) || nicknameError}
+                helperText={validationErrors.nickname || nicknameErrorMessage}
                 color={nicknameError ? "error" : "primary"}
               />
             </FormControl>
@@ -197,8 +267,8 @@ export default function SignUp(props) {
                 fullWidth
                 id="username"
                 placeholder="jsnow"
-                error={usernameError}
-                helperText={usernameErrorMessage}
+                error={Boolean(validationErrors.username) || usernameError}
+                helperText={validationErrors.username || usernameErrorMessage}
                 color={usernameError ? "error" : "primary"}
               />
             </FormControl>
@@ -212,13 +282,13 @@ export default function SignUp(props) {
                 name="email"
                 autoComplete="email"
                 variant="outlined"
-                error={emailError}
-                helperText={emailErrorMessage}
-                color={passwordError ? "error" : "primary"}
+                error={Boolean(validationErrors.email) || emailError}
+                helperText={validationErrors.email || emailErrorMessage}
+                color={newPasswordError ? "error" : "primary"}
               />
             </FormControl>
             <FormControl>
-              <FormLabel htmlFor="password">Password</FormLabel>
+              <FormLabel htmlFor="new-password">Password</FormLabel>
               <TextField
                 required
                 fullWidth
@@ -226,11 +296,14 @@ export default function SignUp(props) {
                 placeholder="••••••"
                 type="password"
                 id="new-password"
-                autoComplete="new-password"
                 variant="outlined"
-                error={passwordError}
-                helperText={passwordErrorMessage}
-                color={passwordError ? "error" : "primary"}
+                error={
+                  Boolean(validationErrors["new-password"]) || newPasswordError
+                }
+                helperText={
+                  validationErrors["new-password"] || newPasswordErrorMessage
+                }
+                color={newPasswordError ? "error" : "primary"}
               />
             </FormControl>
             <FormControl>
@@ -242,10 +315,15 @@ export default function SignUp(props) {
                 placeholder="••••••"
                 type="password"
                 id="confirm-password"
-                autoComplete="confirm-password"
                 variant="outlined"
-                error={confirmPasswordError}
-                helperText={confirmPasswordErrorMessage}
+                error={
+                  Boolean(validationErrors["confirm-password"]) ||
+                  confirmPasswordError
+                }
+                helperText={
+                  validationErrors["confirm-password"] ||
+                  confirmPasswordErrorMessage
+                }
                 color={confirmPasswordError ? "error" : "primary"}
               />
             </FormControl>

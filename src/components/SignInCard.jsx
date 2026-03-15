@@ -1,6 +1,6 @@
 import * as React from "react";
 
-import { useNavigate, Link as RouterLink } from "react-router";
+import { useNavigate, useOutletContext } from "react-router-dom";
 
 import Link from "@mui/material/Link";
 
@@ -34,14 +34,32 @@ const Card = styled(MuiCard)(({ theme }) => ({
   }),
 }));
 
-export default function SignInCard() {
+export default function SignInCard({ email }) {
+  const [emailField, setEmailField] = React.useState(email);
+
   const [emailError, setEmailError] = React.useState(false);
   const [emailErrorMessage, setEmailErrorMessage] = React.useState("");
   const [passwordError, setPasswordError] = React.useState(false);
   const [passwordErrorMessage, setPasswordErrorMessage] = React.useState("");
   const [open, setOpen] = React.useState(false);
 
-  let navigate = useNavigate();
+  const navigate = useNavigate();
+  const { apiUrl } = useOutletContext();
+  const [validationErrors, setValidationErrors] = React.useState({});
+  const emailRef = React.useRef(null);
+  const passwordRef = React.useRef(null);
+
+
+  const apiPath = `${apiUrl}/user/login`;
+
+  
+  React.useEffect(() => {
+    if (emailField) {
+      passwordRef.current?.focus();
+    } else {
+      emailRef.current?.focus();
+    }
+  }, []);
 
   const handleClickOpen = () => {
     setOpen(true);
@@ -51,18 +69,47 @@ export default function SignInCard() {
     setOpen(false);
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     if (emailError || passwordError) {
-      event.preventDefault();
       return;
     }
+
     const data = new FormData(event.currentTarget);
-    console.log({
+
+    const postData = {
       email: data.get("email"),
       password: data.get("password"),
-    });
+    };
 
-    // got this far so need to call my api to signin TODO
+    try {
+      const response = await fetch(`${apiPath}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(postData),
+      });
+
+      if (response.status != 400 && !response.ok) {
+        console.error("Login failed");
+        return;
+      } else {
+        const result = await response.json();
+
+        if (response.status == 400) {
+          const formatted = {};
+          result.data.forEach((err) => {
+            formatted[err.path] = err.msg;
+          });
+
+          setValidationErrors(formatted);
+        } else {
+          console.log("//TODO go somewhere!! like a dashboard or something")
+        }
+      }
+    } catch (err) {
+      console.error("Network error:", err);
+    }
+    
   };
 
   const validateInputs = () => {
@@ -95,7 +142,7 @@ export default function SignInCard() {
   return (
     <Card variant="outlined">
       <Box sx={{ display: { xs: "flex", md: "none" } }}>
-          <SitemarkIcon />
+        <SitemarkIcon />
       </Box>
       <Typography
         component="h1"
@@ -118,13 +165,15 @@ export default function SignInCard() {
             id="email"
             type="email"
             name="email"
-            placeholder="your@email.com"
+            value={email && `${email}`}
+            placeholder={email ? `${email}` : "your-email@email.com"}
             autoComplete="email"
             autoFocus
             required
             fullWidth
             variant="outlined"
             color={emailError ? "error" : "primary"}
+            inputRef={emailRef}
           />
         </FormControl>
         <FormControl>
@@ -144,6 +193,7 @@ export default function SignInCard() {
             fullWidth
             variant="outlined"
             color={passwordError ? "error" : "primary"}
+            inputRef={passwordRef}
           />
         </FormControl>
         <Button
